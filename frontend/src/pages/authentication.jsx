@@ -306,24 +306,40 @@ export default function Authentication() {
                             p: '5px', 
                             borderRadius: '14px', 
                             width: '100%', 
-                            my: 3 
+                            my: 3,
+                            position: 'relative',
+                            overflow: 'hidden'
                         }}>
+                            {/* Sliding Highlight Background */}
+                            <Box sx={{
+                                position: 'absolute',
+                                top: '5px',
+                                bottom: '5px',
+                                left: '5px',
+                                width: 'calc(50% - 5px)',
+                                borderRadius: '10px',
+                                background: '#ffffff',
+                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                                transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transform: formState === 0 ? 'translateX(0)' : 'translateX(100%)',
+                                zIndex: 1,
+                            }} />
+
                             <Button 
                                 fullWidth 
-                                variant={formState === 0 ? "contained" : "text"} 
                                 onClick={() => { setFormState(0) }}
                                 sx={{ 
-                                    py: 1, 
+                                    py: 1.2, 
                                     borderRadius: '10px',
                                     fontWeight: 700,
                                     fontSize: '0.9rem',
-                                    bgcolor: formState === 0 ? '#ffffff' : 'transparent',
+                                    background: 'transparent',
                                     color: formState === 0 ? '#6366f1' : '#64748b',
-                                    boxShadow: formState === 0 ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+                                    transition: 'color 0.35s ease',
+                                    zIndex: 2,
                                     '&:hover': {
-                                        bgcolor: formState === 0 ? '#ffffff' : 'rgba(0,0,0,0.02)',
+                                        background: 'transparent',
                                         transform: 'none',
-                                        boxShadow: formState === 0 ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
                                     }
                                 }}
                             >
@@ -331,20 +347,19 @@ export default function Authentication() {
                             </Button>
                             <Button 
                                 fullWidth 
-                                variant={formState === 1 ? "contained" : "text"} 
                                 onClick={() => { setFormState(1) }}
                                 sx={{ 
-                                    py: 1, 
+                                    py: 1.2, 
                                     borderRadius: '10px',
                                     fontWeight: 700,
                                     fontSize: '0.9rem',
-                                    bgcolor: formState === 1 ? '#ffffff' : 'transparent',
+                                    background: 'transparent',
                                     color: formState === 1 ? '#6366f1' : '#64748b',
-                                    boxShadow: formState === 1 ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
+                                    transition: 'color 0.35s ease',
+                                    zIndex: 2,
                                     '&:hover': {
-                                        bgcolor: formState === 1 ? '#ffffff' : 'rgba(0,0,0,0.02)',
+                                        background: 'transparent',
                                         transform: 'none',
-                                        boxShadow: formState === 1 ? '0 4px 12px rgba(0,0,0,0.05)' : 'none',
                                     }
                                 }}
                             >
@@ -353,17 +368,26 @@ export default function Authentication() {
                         </Box>
 
                         <Box component="form" noValidate sx={{ width: '100%' }}>
-                            {formState === 1 ? <TextField
-                                margin="normal"
-                                required
-                                fullWidth
-                                id="name"
-                                label="Full Name"
-                                name="name"
-                                value={name}
-                                autoFocus
-                                onChange={(e) => setName(e.target.value)}
-                            /> : <></>}
+                            {/* Smooth Slide & Fade for Full Name field */}
+                            <Box sx={{
+                                maxHeight: formState === 1 ? '100px' : '0px',
+                                opacity: formState === 1 ? 1 : 0,
+                                transform: formState === 1 ? 'translateY(0)' : 'translateY(-10px)',
+                                overflow: 'hidden',
+                                transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                                mb: formState === 1 ? 1 : 0,
+                            }}>
+                                <TextField
+                                    margin="normal"
+                                    required
+                                    fullWidth
+                                    id="name"
+                                    label="Full Name"
+                                    name="name"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                />
+                            </Box>
 
                             <TextField
                                 margin="normal"

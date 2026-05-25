@@ -1,6 +1,8 @@
-import React from 'react'
-import "../App.css"
-import { Link, useNavigate } from 'react-router-dom'
+import React from 'react';
+import "../App.css";
+import { Link, useNavigate } from 'react-router-dom';
+import VideoCallIcon from '@mui/icons-material/VideoCall';
+// import logo from '../logo.jpeg';
 export default function LandingPage() {
 
 
@@ -9,8 +11,10 @@ export default function LandingPage() {
     return (
         <div className='landingPageContainer'>
             <nav>
-                <div className='navHeader'>
-                    <h2>Apna Video Call</h2>
+                <div className='navHeader' style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <VideoCallIcon fontSize="large" sx={{ color: '#6366f1' }} />
+
+                    <h2 style={{ margin: 0 }}>BHAGIDARI</h2>
                 </div>
                 <div className='navlist'>
                     <p onClick={() => {
@@ -41,7 +45,7 @@ export default function LandingPage() {
                 </div>
                 <div>
 
-                    <img src="/mobile.png" alt="" />
+                    <img src="/logo3.png" alt="Bhagidari Logo" />
 
                 </div>
             </div>

@@ -144,14 +144,21 @@
     width: 100%;
 }
 
-.chatContainer h1 {
+.chatHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    padding-bottom: 12px;
+}
+
+.chatHeader h1 {
     font-size: 1.4rem;
     font-weight: 800;
     color: #0f172a;
     letter-spacing: -0.5px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-    padding-bottom: 12px;
+    margin: 0;
 }
 
 /* Chat Message Logs */

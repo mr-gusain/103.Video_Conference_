@@ -13,6 +13,7 @@ import MicOffIcon from '@mui/icons-material/MicOff'
 import ScreenShareIcon from '@mui/icons-material/ScreenShare';
 import StopScreenShareIcon from '@mui/icons-material/StopScreenShare'
 import ChatIcon from '@mui/icons-material/Chat'
+import CloseIcon from '@mui/icons-material/Close';
 import server from '../environment';
 
 const server_url = server;
@@ -106,9 +107,20 @@ export default function VideoMeetComponent() {
 
     let [audioAvailable, setAudioAvailable] = useState(true);
 
-    let [video, setVideo] = useState([]);
+    let [video, setVideo] = useState(true);
 
-    let [audio, setAudio] = useState();
+    let [audio, setAudio] = useState(true);
+
+    const videoRefState = useRef(true);
+    const audioRefState = useRef(true);
+
+    useEffect(() => {
+        videoRefState.current = video;
+    }, [video]);
+
+    useEffect(() => {
+        audioRefState.current = audio;
+    }, [audio]);
 
     let [screen, setScreen] = useState();
 
@@ -140,7 +152,7 @@ export default function VideoMeetComponent() {
         console.log("HELLO")
         getPermissions();
 
-    })
+    }, [])
 
     let getDislayMedia = () => {
         if (screen) {
@@ -155,59 +167,74 @@ export default function VideoMeetComponent() {
 
     const getPermissions = async () => {
         try {
-            const videoPermission = await navigator.mediaDevices.getUserMedia({ video: true });
-            if (videoPermission) {
-                setVideoAvailable(true);
-                console.log('Video permission granted');
-            } else {
-                setVideoAvailable(false);
-                console.log('Video permission denied');
-            }
-
-            const audioPermission = await navigator.mediaDevices.getUserMedia({ audio: true });
-            if (audioPermission) {
-                setAudioAvailable(true);
-                console.log('Audio permission granted');
-            } else {
-                setAudioAvailable(false);
-                console.log('Audio permission denied');
-            }
-
             if (navigator.mediaDevices.getDisplayMedia) {
                 setScreenAvailable(true);
             } else {
                 setScreenAvailable(false);
             }
 
-            if (videoAvailable || audioAvailable) {
-                const userMediaStream = await navigator.mediaDevices.getUserMedia({ video: videoAvailable, audio: audioAvailable });
-                if (userMediaStream) {
-                    window.localStream = userMediaStream;
-                    if (localVideoref.current) {
-                        localVideoref.current.srcObject = userMediaStream;
-                    }
-                }
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            setVideoAvailable(true);
+            setAudioAvailable(true);
+            setVideo(true);
+            setAudio(true);
+            window.localStream = stream;
+            if (localVideoref.current) {
+                localVideoref.current.srcObject = stream;
             }
+            console.log('Video and Audio permissions granted, stream initialized');
         } catch (error) {
-            console.log(error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Media Access Denied',
-                text: 'We were unable to access your video or audio inputs. Please grant microphone and camera permissions in your browser bar.',
-                confirmButtonColor: '#6366f1',
-            });
+            console.log('Failed to get both video and audio, trying individually...', error);
+            
+            let videoStream = null;
+            let videoPermission = false;
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                videoPermission = true;
+                setVideoAvailable(true);
+                setVideo(true);
+            } catch (videoError) {
+                setVideoAvailable(false);
+                setVideo(false);
+            }
+
+            let audioStream = null;
+            let audioPermission = false;
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioPermission = true;
+                setAudioAvailable(true);
+                setAudio(true);
+            } catch (audioError) {
+                setAudioAvailable(false);
+                setAudio(false);
+            }
+
+            if (videoPermission && audioPermission) {
+                const combinedStream = new MediaStream();
+                if (videoStream) videoStream.getVideoTracks().forEach(track => combinedStream.addTrack(track));
+                if (audioStream) audioStream.getAudioTracks().forEach(track => combinedStream.addTrack(track));
+                window.localStream = combinedStream;
+            } else if (videoPermission && videoStream) {
+                window.localStream = videoStream;
+            } else if (audioPermission && audioStream) {
+                window.localStream = audioStream;
+            }
+
+            if (window.localStream) {
+                if (localVideoref.current) {
+                    localVideoref.current.srcObject = window.localStream;
+                }
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Media Access Denied',
+                    text: 'We were unable to access your video or audio inputs. Please grant microphone and camera permissions in your browser bar.',
+                    confirmButtonColor: '#6366f1',
+                });
+            }
         }
     };
-
-    useEffect(() => {
-        if (video !== undefined && audio !== undefined) {
-            getUserMedia();
-            console.log("SET STATE HAS ", video, audio);
-
-        }
-
-
-    }, [video, audio])
     let getMedia = () => {
         setVideo(videoAvailable);
         setAudio(audioAvailable);
@@ -269,17 +296,27 @@ export default function VideoMeetComponent() {
     }
 
     let getUserMedia = () => {
-        if ((video && videoAvailable) || (audio && audioAvailable)) {
-            navigator.mediaDevices.getUserMedia({ video: video, audio: audio })
-                .then(getUserMediaSuccess)
-                .then((stream) => { })
-                .catch((e) => console.log(e))
-        } else {
-            try {
-                let tracks = localVideoref.current.srcObject.getTracks()
-                tracks.forEach(track => track.stop())
-            } catch (e) { }
+        const currentVideo = videoRefState.current;
+        const currentAudio = audioRefState.current;
+
+        if (!videoAvailable && !audioAvailable) {
+            return;
         }
+
+        navigator.mediaDevices.getUserMedia({ 
+            video: videoAvailable, 
+            audio: audioAvailable 
+        })
+        .then((stream) => {
+            stream.getVideoTracks().forEach(track => {
+                track.enabled = currentVideo;
+            });
+            stream.getAudioTracks().forEach(track => {
+                track.enabled = currentAudio;
+            });
+            getUserMediaSuccess(stream);
+        })
+        .catch((e) => console.log(e));
     }
 
 
@@ -461,18 +498,45 @@ export default function VideoMeetComponent() {
     }
 
     let handleVideo = () => {
-        setVideo(!video);
-        // getUserMedia();
+        const newVideoState = !video;
+        setVideo(newVideoState);
+        
+        if (window.localStream) {
+            const videoTracks = window.localStream.getVideoTracks();
+            if (videoTracks.length > 0) {
+                videoTracks.forEach(track => {
+                    track.enabled = newVideoState;
+                });
+            } else if (newVideoState) {
+                getUserMedia();
+            }
+        } else if (newVideoState) {
+            getUserMedia();
+        }
     }
     let handleAudio = () => {
-        setAudio(!audio)
-        // getUserMedia();
+        const newAudioState = !audio;
+        setAudio(newAudioState);
+        
+        if (window.localStream) {
+            const audioTracks = window.localStream.getAudioTracks();
+            if (audioTracks.length > 0) {
+                audioTracks.forEach(track => {
+                    track.enabled = newAudioState;
+                });
+            } else if (newAudioState) {
+                getUserMedia();
+            }
+        } else if (newAudioState) {
+            getUserMedia();
+        }
     }
 
     useEffect(() => {
         if (screen !== undefined) {
             getDislayMedia();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [screen])
     let handleScreen = () => {
         setScreen(!screen);
@@ -483,18 +547,11 @@ export default function VideoMeetComponent() {
             let tracks = localVideoref.current.srcObject.getTracks()
             tracks.forEach(track => track.stop())
         } catch (e) { }
-        window.location.href = "/"
+        window.location.href = "/home"
     }
 
-    let openChat = () => {
-        setModal(true);
-        setNewMessages(0);
-    }
     let closeChat = () => {
         setModal(false);
-    }
-    let handleMessage = (e) => {
-        setMessage(e.target.value);
     }
 
     const addMessage = (data, sender, socketIdSender) => {
@@ -646,7 +703,12 @@ export default function VideoMeetComponent() {
                         {showModal ? (
                             <div className={styles.chatRoom}>
                                 <div className={styles.chatContainer}>
-                                    <h1>Room Chat</h1>
+                                    <div className={styles.chatHeader}>
+                                        <h1>Room Chat</h1>
+                                        <IconButton onClick={closeChat} size="small" sx={{ color: '#64748b' }}>
+                                            <CloseIcon />
+                                        </IconButton>
+                                    </div>
 
                                     {/* Scrollable message displays */}
                                     <div className={styles.chattingDisplay}>
